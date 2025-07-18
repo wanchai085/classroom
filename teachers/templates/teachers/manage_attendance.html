@@ -1,0 +1,146 @@
+{% extends "base/_base.html" %}
+{% load tz %}
+
+{% block title %}จัดการการเช็คชื่อ - {{ classroom }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-person-check-fill"></i> จัดการการเช็คชื่อ</h2>
+    <a href="{% url 'teachers:classroom_detail' classroom.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> กลับไปที่ห้องเรียน</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    {% if active_session %}
+                        <span class="text-success"><i class="bi bi-broadcast"></i> สถานะ: กำลังเปิดให้เช็คชื่อ</span>
+                    {% else %}
+                        <i class="bi bi-door-closed"></i> สถานะ: ปิดรับการเช็คชื่อ
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if active_session %}
+                    <!-- ส่วนแสดงผลเมื่อมี Session ที่ทำงานอยู่ -->
+                    <div class="text-center p-4 bg-light rounded">
+                        <p class="text-muted mb-2">รหัสสำหรับเข้าเช็คชื่อคือ:</p>
+                        <p class="display-4 fw-bold text-primary" style="letter-spacing: 0.2em; cursor: pointer;" onclick="copyToClipboard('{{ active_session.code }}')">{{ active_session.code }}</p>
+                        <hr>
+                        <p class="mb-1">จะปิดในเวลา: <strong class="text-danger">{{ active_session.end_time|localtime|date:"H:i:s" }} น.</strong> (<span id="countdown"></span>)</p>
+                        <form action="{% url 'teachers:manage_attendance' classroom.pk %}" method="post" class="mt-3">
+                            {% csrf_token %}
+                            <button type="submit" name="close_session" class="btn btn-danger w-100"><i class="bi bi-stop-circle-fill"></i> ปิดการเช็คชื่อทันที</button>
+                        </form>
+                    </div>
+                {% else %}
+                    <!-- ส่วนสร้าง Session ใหม่ (แบบกำหนดวินาที) -->
+                    <form action="{% url 'teachers:manage_attendance' classroom.pk %}" method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="duration_seconds" class="form-label lead">กำหนดระยะเวลา (วินาที):</label>
+                            <input type="number" class="form-control form-control-lg text-center" id="duration_seconds" name="duration_seconds" placeholder="เช่น 300 (สำหรับ 5 นาที)" required min="1">
+                        </div>
+                        <div class="mb-3 text-center">
+                            <small class="text-muted">หรือใช้ปุ่มลัด:</small><br>
+                            <div class="btn-group mt-1" role="group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="setDuration(60)">1 นาที</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setDuration(300)">5 นาที</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setDuration(600)">10 นาที</button>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-play-circle-fill"></i> เริ่มเปิดให้เช็คชื่อ</button>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ส่วนแสดงรายชื่อนักเรียนที่เช็คชื่อแล้ว -->
+        {% if active_session %}
+           <div class="card shadow-sm mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-card-checklist"></i> นักเรียนที่เช็คชื่อแล้ว (<span id="attendance-count">{{ active_session.records.count }}</span>)</h5>
+                    <button class="btn btn-sm btn-outline-info" onclick="fetchAttendanceData()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+                </div>
+                <ul class="list-group list-group-flush" id="attendance-list">
+                    {% for record in active_session.records.all %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ record.student.full_name }}
+                            <small class="text-muted">{{ record.timestamp|localtime|date:"H:i:s" }} น.</small>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item text-muted text-center" id="no-students-message">ยังไม่มีนักเรียนเช็คชื่อ</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    {% if active_session %}
+        // โค้ดสำหรับหน้าที่มี Session ทำงานอยู่ (Real-time)
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => alert('คัดลอกรหัส "' + text + '" แล้ว!'));
+        }
+
+        const countDownElement = document.getElementById('countdown');
+        const endTime = new Date("{{ active_session.end_time.isoformat }}").getTime();
+
+        const attendanceList = document.getElementById('attendance-list');
+        const attendanceCount = document.getElementById('attendance-count');
+        const apiUrl = "{% url 'teachers:api_get_attendance_records' active_session.pk %}";
+
+        function fetchAttendanceData() {
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    attendanceList.innerHTML = '';
+                    const students = data.students;
+                    attendanceCount.textContent = students.length;
+                    if (students.length === 0) {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item text-muted text-center';
+                        li.textContent = 'ยังไม่มีนักเรียนเช็คชื่อ';
+                        attendanceList.appendChild(li);
+                    } else {
+                        students.forEach(student => {
+                            const li = document.createElement('li');
+                            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                            li.innerHTML = `<span>${student.full_name}</span><small class="text-muted">${student.timestamp} น.</small>`;
+                            attendanceList.appendChild(li);
+                        });
+                    }
+                });
+        }
+
+        const pollingInterval = setInterval(fetchAttendanceData, 5000);
+
+        const countdownInterval = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+            if (distance < 0) {
+                clearInterval(countdownInterval);
+                clearInterval(pollingInterval);
+                countDownElement.innerHTML = "หมดเวลาแล้ว";
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                countDownElement.innerHTML = "เหลืออีก " + minutes + " นาที " + seconds + " วินาที";
+            }
+        }, 1000);
+
+    {% else %}
+        // โค้ดสำหรับหน้าที่ยังไม่มี Session (ปุ่มลัด)
+        function setDuration(seconds) {
+            document.getElementById('duration_seconds').value = seconds;
+        }
+    {% endif %}
+</script>
+{% endblock %}

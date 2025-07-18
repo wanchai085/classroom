@@ -1,0 +1,84 @@
+{% extends "base/_base.html" %}
+{% load static %}
+{% load tz %}
+
+{% block title %}Teacher Dashboard{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Dashboard ภาพรวม</h2>
+
+<!-- ส่วนสถิติที่ปรับปรุงใหม่ -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-3 col-6"><div class="card text-center h-100"><div class="card-body"><h6 class="card-title text-muted">วิชาทั้งหมด</h6><p class="h4 fw-bold text-primary mb-0">{{ total_subjects }}</p></div></div></div>
+    <div class="col-lg-3 col-6"><div class="card text-center h-100"><div class="card-body"><h6 class="card-title text-muted">ห้องเรียนทั้งหมด</h6><p class="h4 fw-bold text-info mb-0">{{ total_classrooms }}</p></div></div></div>
+    <div class="col-lg-3 col-6"><div class="card text-center h-100"><div class="card-body"><h6 class="card-title text-muted">นักเรียนในความดูแล</h6><p class="h4 fw-bold text-success mb-0">{{ total_students }}</p></div></div></div>
+
+    <!-- 3. เปลี่ยน "กลุ่มเสี่ยง" เป็น "คลังเอกสาร" และทำให้กดได้ -->
+    <div class="col-lg-3 col-6">
+        <a href="{% url 'teachers:document_storage' %}" class="card text-center h-100 text-decoration-none text-dark lift">
+            <div class="card-body d-flex flex-column justify-content-center">
+                <h6 class="card-title text-muted"><i class="bi bi-archive-fill me-1"></i>คลังเอกสาร</h6>
+                <p class="h4 fw-bold text-secondary mb-0">เปิด</p>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- ปุ่มสำหรับไปหน้ารายการวิชา -->
+<div class="d-grid gap-2 mb-4">
+    <a href="{% url 'teachers:subject_list' %}" class="btn btn-outline-primary btn-lg py-3">
+        <i class="bi bi-card-list me-2"></i>ไปที่หน้ารายการวิชาทั้งหมด
+    </a>
+</div>
+
+<!-- Action Widgets -->
+<div class="row g-4">
+    <!-- Widget: สิ่งที่ต้องทำ / แจ้งเตือน -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white"><i class="bi bi-bell-fill me-2"></i><strong>สิ่งที่ต้องทำ / แจ้งเตือน</strong></div>
+            <div class="list-group list-group-flush">
+                {% for notif in unread_notifications %}
+                    <!-- 1. ทำให้การแจ้งเตือนกดได้ -->
+                    <a href="{% url 'accounts:mark_notification_as_read' %}?notif_id={{ notif.id }}" class="list-group-item list-group-item-action">
+                        {{ notif.message }}
+                    </a>
+                {% empty %}
+                    <div class="list-group-item text-muted">ไม่มีการแจ้งเตือนใหม่</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Widget: กำหนดการส่งงาน -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-warning text-dark"><i class="bi bi-calendar-check me-2"></i><strong>กำหนดการส่งงาน</strong></div>
+            <div class="list-group list-group-flush">
+                {% for assignment in upcoming_assignments %}
+                <a href="{% url 'academics:assignment_detail' assignment.pk %}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ assignment.title|truncatechars:25 }}</h6>
+                        <small class="text-danger fw-bold">{{ assignment.due_date|localtime|date:"D, j M" }}</small>
+                    </div>
+                    <small class="text-muted">{{ assignment.classroom }}</small>
+                </a>
+                {% empty %}
+                    <div class="list-group-item text-muted">ไม่มีกำหนดการส่งงานที่กำลังจะมาถึง</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. เปลี่ยน Widget "กิจกรรมล่าสุด" เป็น "กลุ่มเสี่ยง (AI)" -->
+    <div class="col-lg-4">
+        <a href="{% url 'teachers:risk_students' %}" class="card shadow-sm h-100 text-decoration-none text-dark lift">
+            <div class="card-header bg-danger text-white"><i class="bi bi-shield-exclamation me-2"></i><strong>กลุ่มเสี่ยง (AI)</strong></div>
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+                <p class="display-1 fw-bold text-danger mb-0">{{ risk_students_count }}</p>
+                <p class="text-muted mt-2">คน</p>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

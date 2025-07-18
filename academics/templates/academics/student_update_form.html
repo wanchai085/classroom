@@ -1,0 +1,22 @@
+{% extends "base/_base.html" %} <!-- แก้ไข: เพิ่ม extends -->
+{% block title %}แก้ไขข้อมูลนักเรียน{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>แก้ไขข้อมูลนักเรียน</h3>
+    </div>
+    <div class="card-body">
+        <h5 class="card-title">นักเรียน: {{ student.full_name }}</h5>
+        <hr>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <br>
+            <button type="submit" class="btn btn-primary">บันทึกการเปลี่ยนแปลง</button>
+            <!-- แก้ไข: ใช้ namespace 'teachers' -->
+            <a href="{{ request.GET.next|default_if_none:'teachers:dashboard' }}" class="btn btn-secondary">ยกเลิก</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

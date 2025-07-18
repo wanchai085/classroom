@@ -1,0 +1,29 @@
+{% extends "base/_base.html" %}
+
+{% block title %}ยืนยันการลบวิชา{% endblock %}
+
+{% block content %}
+<div class="col-lg-6 mx-auto">
+    <div class="card text-center border-danger">
+        <div class="card-header bg-danger text-white">
+            <h3><i class="bi bi-exclamation-triangle-fill"></i> ยืนยันการลบ</h3>
+        </div>
+        <div class="card-body">
+            <p class="card-text fs-5">
+                คุณแน่ใจหรือไม่ว่าต้องการลบวิชา <strong>"{{ subject.name }}"</strong>?
+            </p>
+            <p class="text-danger">
+                <strong>คำเตือน:</strong> การกระทำนี้ไม่สามารถย้อนกลับได้ และจะลบข้อมูลทั้งหมดที่เกี่ยวข้องกับวิชานี้ รวมถึง **ห้องเรียน, ชิ้นงาน, และข้อมูลการส่งงานทั้งหมด**
+            </p>
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                    <!-- แก้ไข: ใช้ namespace 'teachers' -->
+                    <a href="{% url 'teachers:dashboard' %}" class="btn btn-secondary">ไม่, ฉันเปลี่ยนใจ</a>
+                    <button type="submit" class="btn btn-danger">ใช่, ฉันต้องการลบ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

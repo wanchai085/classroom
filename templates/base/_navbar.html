@@ -1,0 +1,46 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'home' %}"><strong>AI Classroom</strong></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-bell-fill"></i>
+                            {% if notification_count > 0 %}<span class="badge rounded-pill bg-danger">{{ notification_count }}</span>{% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% for notif in notifications %}
+                            <li><a class="dropdown-item" href="{% url 'accounts:mark_notification_as_read' %}?notif_id={{ notif.id }}">{{ notif.message }}</a></li>
+                            {% empty %}
+                            <li><a class="dropdown-item disabled" href="#">ไม่มีการแจ้งเตือนใหม่</a></li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            ยินดีต้อนรับ, {{ user.get_full_name|default:user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'accounts:password_change' %}">เปลี่ยนรหัสผ่าน</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form action="{% url 'accounts:logout' %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item">ออกจากระบบ</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:login' %}">เข้าสู่ระบบ</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

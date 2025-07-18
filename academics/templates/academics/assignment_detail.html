@@ -1,0 +1,91 @@
+{% extends "base/_base.html" %} <!-- แก้ไข: extends จาก base/_base.html -->
+{% load student_extras %}
+{% load tz %}
+
+{% block title %}ชิ้นงาน: {{ assignment.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <!-- แก้ไข: ใช้ namespace 'teachers' -->
+    <a href="{% url 'teachers:classroom_detail' assignment.classroom.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> กลับไปหน้ารายละเอียดห้องเรียน</a>
+</div>
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="card-title h3">{{ assignment.title }}</h2>
+                <p class="card-text text-muted">{{ assignment.description|linebreaksbr }}</p>
+                {% if assignment.attachment %}<p><a href="{{ assignment.attachment.url }}" target="_blank" class="btn btn-link ps-0"><i class="bi bi-paperclip"></i> ดูไฟล์แนบ</a></p>{% endif %}
+                <small class="text-danger fw-bold">กำหนดส่ง: {{ assignment.due_date|localtime|date:"d M Y, H:i" }} น.</small>
+            </div>
+            <div class="btn-group">
+                <!-- แก้ไข: ใช้ namespace 'academics' -->
+                <a href="{% url 'academics:assignment_update' assignment.pk %}" class="btn btn-warning">แก้ไข</a>
+                <a href="{% url 'academics:assignment_delete' assignment.pk %}" class="btn btn-danger">ลบ</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header bg-white"><h5 class="mb-0">สถานะการส่งงานของนักเรียน</h5></div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>ชื่อนักเรียน</th>
+                    <th class="text-center">สถานะ</th>
+                    <th>ไฟล์ที่ส่ง</th>
+                    <th>คะแนน / คอมเมนต์</th>
+                    <th style="width: 25%;">ให้คะแนน</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in all_students %}
+                {% with submission=submission_dict|get_item:student.pk %}
+                <tr class="{% if submission and submission.is_late %}table-danger{% endif %}">
+                    <td>{{ student.full_name }}</td>
+                    <td class="text-center">
+                        {% if submission %}
+                            <span class="badge bg-success">ส่งแล้ว</span><br>
+                            <small class="text-muted">{{ submission.submitted_at|localtime|date:"d M, H:i" }}</small>
+                            {% if submission.is_late %}<br><span class="badge bg-danger mt-1">ส่งสาย</span>{% endif %}
+                        {% else %}
+                            <span class="badge bg-secondary">ยังไม่ส่ง</span>
+                        {% endif %}
+                    </td>
+                    <td>{% if submission %}<a href="{{ submission.attachment.url }}" target="_blank">ดูไฟล์</a>{% else %}-{% endif %}</td>
+                    <td>
+                        {% if submission %}
+                            <p class="mb-1"><strong>คะแนน:</strong> {{ submission.grade|default_if_none:"-" }}</p>
+                            <p class="mb-0"><strong>คอมเมนต์:</strong> {{ submission.feedback|default_if_none:"-"|linebreaksbr }}</p>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if submission %}
+                        <!-- แก้ไข: ใช้ namespace 'academics' -->
+                        <form method="post" action="{% url 'academics:grade_submission' submission.pk %}">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                                <label for="grade-{{ student.pk }}" class="form-label visually-hidden">คะแนน</label>
+                                <input type="number" step="0.01" name="grade" id="grade-{{ student.pk }}" class="form-control form-control-sm" value="{{ submission.grade|default_if_none:'' }}" placeholder="คะแนน (เต็ม {{ assignment.max_score|default_if_none:'-' }})">
+                            </div>
+                            <div class="mb-2">
+                                <label for="feedback-{{ student.pk }}" class="form-label visually-hidden">คอมเมนต์</label>
+                                <textarea name="feedback" id="feedback-{{ student.pk }}" class="form-control form-control-sm" rows="2" placeholder="เพิ่มคอมเมนต์...">{{ submission.feedback|default_if_none:'' }}</textarea>
+                            </div>
+                            <button class="btn btn-sm btn-success w-100" type="submit">บันทึก</button>
+                        </form>
+                        {% else %}-{% endif %}
+                    </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr><td colspan="5" class="text-center p-4 text-muted">ยังไม่มีนักเรียนในห้องนี้</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

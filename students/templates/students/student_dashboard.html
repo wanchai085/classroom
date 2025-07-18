@@ -1,0 +1,84 @@
+{% extends "base/_base.html" %} <!-- แก้ไข: เพิ่ม extends -->
+{% load student_extras %}
+
+{% block title %}Dashboard ของ {{ request.user.get_full_name }}{% endblock %}
+
+{% block content %}
+
+    <div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <h4 class="card-title"><i class="bi bi-person-check"></i> เช็คชื่อเข้าเรียน</h4>
+        <p class="card-text text-muted">กรอกรหัส 6 หลักที่คุณครูให้ในห้องเรียนที่นี่</p>
+        <form action="{% url 'students:submit_attendance' %}" method="post">
+            {% csrf_token %}
+            <div class="input-group">
+                {{ attendance_form.code }}
+                <button class="btn btn-primary" type="submit">ยืนยัน</button>
+            </div>
+            {% if attendance_form.code.errors %}
+                {% for error in attendance_form.code.errors %}
+                    <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+        </form>
+    </div>
+</div>
+<h2 class="mb-4">รายวิชาทั้งหมดของคุณ</h2>
+<div class="accordion" id="subjectsAccordion">
+    {% for enrollment in enrollments %}
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="heading-{{ enrollment.pk }}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ enrollment.pk }}" aria-expanded="false" aria-controls="collapse-{{ enrollment.pk }}">
+                <div class="d-flex justify-content-between w-100 align-items-center me-3">
+                    <div>
+                        <strong class="fs-5">{{ enrollment.classroom.subject.name }}</strong>
+                        <div class="small text-muted">ห้องเรียน: {{ enrollment.classroom.class_name }} | ครูผู้สอน: {{ enrollment.classroom.subject.teacher.get_full_name }}</div>
+                    </div>
+                    <div>
+                        {% if enrollment.final_grade is not None %}
+                            <span class="badge {% if enrollment.final_grade < 1.0 %}bg-danger{% else %}bg-success{% endif %} p-2 fs-6">เกรด: {{ enrollment.final_grade }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary p-2">ยังไม่มีเกรด</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </button>
+        </h2>
+        <div id="collapse-{{ enrollment.pk }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ enrollment.pk }}" data-bs-parent="#subjectsAccordion">
+            <div class="accordion-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6><i class="bi bi-list-ol"></i> องค์ประกอบคะแนน</h6>
+                        <ul class="list-group list-group-flush">
+                            {% for component in enrollment.components.all %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ component.name }}
+                                <span class="badge bg-primary rounded-pill">{{ component.score|floatformat:2 }}</span>
+                            </li>
+                            {% empty %}
+                            <li class="list-group-item text-muted">ยังไม่มีคะแนนเก็บ</li>
+                            {% endfor %}
+                        </ul>
+                        <hr>
+                        <!-- แก้ไข: ใช้ namespace 'students' -->
+                        <a href="{% url 'students:subject_detail' enrollment.pk %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-card-checklist"></i> ดูชิ้นงานและการส่งงาน
+                        </a>
+                    </div>
+                    <div class="col-md-4 text-center mt-3 mt-md-0">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="text-muted">คะแนนรวม</h6>
+                                <p class="score-display {% if enrollment.total_score < 50 %}text-danger{% else %}text-info{% endif %}">{{ enrollment.total_score|floatformat:2 }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+        <div class="alert alert-warning">คุณยังไม่ได้ลงทะเบียนในห้องเรียนใดๆ</div>
+    {% endfor %}
+</div>
+{% endblock %}

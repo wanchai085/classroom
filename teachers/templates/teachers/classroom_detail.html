@@ -1,0 +1,174 @@
+{% extends "base/_base.html" %}
+
+{% block title %}{{ classroom.class_name }} - {{ classroom.subject.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-person-video2"></i> ห้องเรียน: {{ classroom.class_name }}</h2>
+        <p class="text-muted mb-0">
+        วิชา: {{ classroom.subject.name }} (ระดับชั้น: {{ classroom.subject.get_education_level_display }})
+        </p>
+    </div>
+    <div>
+        <a href="{% url 'teachers:manage_attendance' classroom.pk %}" class="btn btn-info">
+            <i class="bi bi-person-check-fill"></i> จัดการเช็คชื่อ
+        </a>
+        <a href="{% url 'academics:gradebook' classroom.pk %}" class="btn btn-primary">
+            <i class="bi bi-table"></i> ดูตารางคะแนน
+        </a>
+        <a href="{% url 'teachers:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> กลับหน้าหลัก
+        </a>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-3" id="classroomTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#students-panel" type="button" role="tab">
+            <i class="bi bi-people-fill"></i> นักเรียน ({{ students.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="assignments-tab" data-bs-toggle="tab" data-bs-target="#assignments-panel" type="button" role="tab">
+            <i class="bi bi-journal-check"></i> ชิ้นงาน ({{ assignments.count }})
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="classroomTabContent">
+    <!-- ======================= Tab นักเรียน ======================= -->
+    <div class="tab-pane fade show active" id="students-panel" role="tabpanel">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">รายชื่อนักเรียนในห้อง</h5>
+                <div class="btn-group">
+                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addStudentModal"><i class="bi bi-person-plus-fill"></i> เพิ่มนักเรียน</button>
+                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#copyStudentsModal"><i class="bi bi-people-fill"></i> คัดลอก</button>
+                    <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#uploadFileModal"><i class="bi bi-cloud-upload-fill"></i> นำเข้าจากไฟล์</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ชื่อ-นามสกุล</th>
+                            <th>รหัสนักเรียน</th>
+                            <th class="text-center">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.full_name }}</td>
+                            <td>{{ student.student_id }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'teachers:student_detail' classroom_pk=classroom.pk student_pk=student.pk %}" class="btn btn-sm btn-primary" title="ดูรายละเอียดและให้คะแนน"><i class="bi bi-eye-fill"></i></a>
+                                <a href="{% url 'academics:student_remove_from_classroom' classroom_pk=classroom.pk student_pk=student.pk %}" class="btn btn-sm btn-danger" title="นำออกจากห้อง"><i class="bi bi-person-x-fill"></i></a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center p-4 text-muted">ยังไม่มีนักเรียนในห้องนี้</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- ======================= Tab ชิ้นงาน ======================= -->
+    <div class="tab-pane fade" id="assignments-panel" role="tabpanel">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light"><h5 class="mb-0">รายการชิ้นงาน</h5></div>
+                     <div class="list-group list-group-flush">
+                        {% for assignment in assignments %}
+                            <a href="{% url 'academics:assignment_detail' assignment.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div>
+                                    {{ assignment.title }}
+                                    <small class="text-muted d-block">กำหนดส่ง: {{ assignment.due_date|date:"d M Y, H:i" }}</small>
+                                </div>
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        {% empty %}
+                            <div class="list-group-item text-center text-muted p-4">ยังไม่มีชิ้นงาน</div>
+                        {% endfor %}
+                     </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light"><h5 class="mb-0">สร้างชิ้นงานใหม่</h5></div>
+                    <div class="card-body">
+                        <form action="{% url 'teachers:classroom_detail' classroom.pk %}" method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="hidden" name="create_assignment" value="1">
+                            {{ assignment_form.as_p }}
+                            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-circle"></i> สร้างชิ้นงาน</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================= Modals ======================= -->
+<!-- Modal: Add Student -->
+<div class="modal fade" id="addStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">เพิ่มนักเรียนใหม่</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form action="{% url 'teachers:classroom_detail' classroom.pk %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="add_new_student" value="1">
+                <div class="modal-body">{{ student_form.as_p }}</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                    <button type="submit" class="btn btn-primary">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Upload File -->
+<div class="modal fade" id="uploadFileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">นำเข้ารายชื่อนักเรียนจากไฟล์</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form action="{% url 'academics:upload_students' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="small text-muted">รองรับไฟล์ Excel (.xlsx) และ Word (.docx) โดยข้อมูลต้องเริ่มที่แถวแรก คอลัมน์ A คือรหัสนักเรียน และคอลัมน์ B คือชื่อ-นามสกุล</p>
+                    {{ upload_form.as_p }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                    <button type="submit" class="btn btn-primary">นำเข้าข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Copy Students -->
+<div class="modal fade" id="copyStudentsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">คัดลอกรายชื่อนักเรียน</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form action="{% url 'academics:copy_students' to_classroom_pk=classroom.pk %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="small text-muted">ใช้ฟังก์ชันนี้เพื่อดึงรายชื่อนักเรียนทั้งหมดจากห้องเรียนอื่นที่คุณสอน มาใส่ในห้องเรียนปัจจุบัน</p>
+                    {{ copy_students_form.as_p }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                    <button type="submit" class="btn btn-primary">ยืนยันการคัดลอก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

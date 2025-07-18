@@ -1,0 +1,7 @@
+{% extends "base/_base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+    <h2 class="mb-4">{{ title }}</h2>
+    <div class="alert alert-info">ฟังก์ชันนี้ยังอยู่ในระหว่างการพัฒนา</div>
+    <a href="{% url 'teachers:dashboard' %}" class="btn btn-primary">กลับหน้า Dashboard</a>
+{% endblock %}

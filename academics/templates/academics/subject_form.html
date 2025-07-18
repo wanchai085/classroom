@@ -1,0 +1,33 @@
+{% extends "base/_base.html" %}
+
+{% block title %}
+    {% if is_create_page %}สร้างวิชาใหม่{% else %}แก้ไขวิชา: {{ subject.name }}{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h3 class="card-title">
+                    {% if is_create_page %}สร้างวิชาใหม่{% else %}แก้ไขวิชา: {{ subject.name }}{% endif %}
+                </h3>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <div class="d-flex justify-content-end mt-3">
+                        <!-- ▼▼▼ แก้ไขลิงก์ "ยกเลิก" ตรงนี้ ▼▼▼ -->
+                        {% if is_create_page %}
+                            <a href="{% url 'teachers:dashboard' %}" class="btn btn-secondary me-2">ยกเลิก</a>
+                        {% else %}
+                            <a href="{% url 'teachers:subject_detail' subject.pk %}" class="btn btn-secondary me-2">ยกเลิก</a>
+                        {% endif %}
+
+                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

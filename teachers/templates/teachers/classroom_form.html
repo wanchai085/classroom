@@ -1,0 +1,22 @@
+{% extends "base/_base.html" %}
+{% block title %}แก้ไขห้องเรียน{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h3 class="card-title">แก้ไขห้องเรียน: {{ classroom.class_name }}</h3>
+                <p class="text-muted">วิชา: {{ classroom.subject.name }}</p>
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <div class="d-flex justify-content-end mt-3">
+                        <a href="{% url 'teachers:subject_detail' classroom.subject.pk %}" class="btn btn-secondary me-2">ยกเลิก</a>
+                        <button type="submit" class="btn btn-primary">บันทึกการแก้ไข</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

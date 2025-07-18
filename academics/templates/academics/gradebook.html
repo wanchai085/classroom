@@ -1,0 +1,57 @@
+{% extends "base/_base.html" %}
+{% load student_extras %}
+
+{% block title %}ตารางคะแนน - {{ classroom.class_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="mb-0">ตารางคะแนน (Gradebook)</h2>
+        <p class="text-muted mb-0">ห้องเรียน: {{ classroom.class_name }} | วิชา: {{ classroom.subject.name }}</p>
+    </div>
+    <!-- แก้ไข: ใช้ namespace 'teachers' -->
+    <a href="{% url 'teachers:classroom_detail' classroom.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> กลับไปที่ห้องเรียน</a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0">
+                <thead class="table-dark" style="position: sticky; top: 0; z-index: 1;">
+                    <tr>
+                        <th>ชื่อ-นามสกุล</th>
+                        <th>รหัสนักเรียน</th>
+                        {% for assignment in assignments %}
+                            <th class="text-center" title="{{ assignment.title }}">
+                                <!-- แก้ไข: ใช้ namespace 'academics' -->
+                                <a href="{% url 'academics:assignment_detail' assignment.pk %}" class="text-white text-decoration-none">
+                                    <div>{{ assignment.title|truncatechars:15 }}</div>
+                                    <small class="fw-normal">({{ assignment.max_score|default_if_none:'-' }})</small>
+                                </a>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in gradebook_data %}
+                    <tr>
+                        <td>{{ data.student.full_name }}</td>
+                        <td>{{ data.student.student_id }}</td>
+                        {% for assignment in assignments %}
+                            <td class="text-center">{{ data.scores|get_item:assignment.id|default_if_none:"-" }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{{ assignments|length|add:2 }}" class="text-center p-5">
+                            <h5 class="text-muted">ยังไม่มีข้อมูลนักเรียนหรือชิ้นงาน</h5>
+                            <p class="text-muted">โปรดเพิ่มนักเรียนเข้าห้องเรียน และไปที่แท็บ "ชิ้นงาน" เพื่อสร้างชิ้นงานแรกของคุณ</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

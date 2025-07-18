@@ -1,0 +1,30 @@
+{% extends "base/_base.html" %}
+
+{% block title %}ยืนยันการนำออก{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-warning text-center">
+            <div class="card-header bg-warning">
+                <h3 class="mb-0">ยืนยันการนำนักเรียนออกจากห้อง</h3>
+            </div>
+            <div class="card-body">
+                <p class="fs-5">
+                    คุณแน่ใจหรือไม่ว่าต้องการนำนักเรียน <strong>{{ enrollment.student.full_name }}</strong> 
+                    ออกจากห้องเรียน <strong>"{{ enrollment.classroom }}"</strong>?
+                </p>
+                <p class="text-muted">
+                    <small>หมายเหตุ: การกระทำนี้จะลบเฉพาะข้อมูลการลงทะเบียนและคะแนนของนักเรียนในห้องนี้เท่านั้น ตัวนักเรียนจะยังคงอยู่ในระบบ</small>
+                </p>
+                <hr>
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning">ยืนยันการนำออก</button>
+                    <a href="{% url 'teachers:classroom_detail' enrollment.classroom.pk %}" class="btn btn-secondary">ยกเลิก</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

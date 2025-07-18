@@ -1,0 +1,77 @@
+{% extends "base/_base.html" %}
+{% load static %}
+
+{% block title %}วิชาทั้งหมดของคุณ{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center">
+        <!-- 1. เพิ่มปุ่ม "กลับ" เข้ามาที่นี่ -->
+        <a href="{% url 'teachers:dashboard' %}" class="btn btn-outline-secondary me-3" title="กลับไปหน้า Dashboard">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="mb-0">วิชาทั้งหมดของคุณ ({{ subjects.count }})</h2>
+    </div>
+
+    <!-- 2. ตรวจสอบให้แน่ใจว่า data-bs-target ตรงกับ id ของ modal -->
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createSubjectModal">
+        <i class="bi bi-plus-circle-fill"></i> สร้างวิชาใหม่
+    </button>
+</div>
+
+<!-- รายการวิชาทั้งหมด (ส่วนนี้ถูกต้องอยู่แล้ว) -->
+{% if subjects %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for subject in subjects %}
+        <div class="col">
+            <a href="{% url 'teachers:subject_detail' subject.pk %}" class="card h-100 shadow-sm text-decoration-none text-dark lift">
+                {% if subject.image %}
+                    <img src="{{ subject.image.url }}" class="card-img-top" alt="{{ subject.name }}" style="height: 150px; object-fit: cover;">
+                {% else %}
+                    <div class="card-img-top d-flex align-items-center justify-content-center bg-secondary bg-opacity-10" style="height: 150px;"><i class="bi bi-card-image" style="font-size: 3rem; color: #adb5bd;"></i></div>
+                {% endif %}
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ subject.name }}</h5>
+                    <p class="card-text small text-muted mb-1"><strong>รหัสวิชา:</strong> {{ subject.subject_code|default:"-" }}</p>
+                    <p class="card-text small text-muted"><strong>ระดับชั้น:</strong> {{ subject.get_education_level_display }}</p>
+                    <div class="mt-auto pt-2"><span class="badge bg-primary rounded-pill"><i class="bi bi-person-video2 me-1"></i>{{ subject.classrooms.count }} ห้องเรียน</span></div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="col-12">
+        <div class="text-center p-5 bg-light rounded">
+            <i class="bi bi-journal-plus" style="font-size: 5rem; color: #6c757d;"></i>
+            <h3 class="mt-4">สร้างวิชาแรกของคุณ</h3>
+            <p class="lead text-muted">เริ่มต้นโดยการกดปุ่ม "สร้างวิชาใหม่" ที่มุมบนขวาได้เลย!</p>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Modal สำหรับสร้างวิชาใหม่ (ตรวจสอบให้แน่ใจว่า id ตรงกัน) -->
+<!-- 3. ตรวจสอบ id ของ Modal -->
+<div class="modal fade" id="createSubjectModal" tabindex="-1" aria-labelledby="createSubjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createSubjectModalLabel">สร้างวิชาใหม่</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <!-- 4. ตรวจสอบ action ของฟอร์ม -->
+            <form action="{% url 'teachers:subject_list' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="small text-muted">กรอกรายละเอียดของวิชาใหม่ที่คุณต้องการสร้าง</p>
+                    {{ smart_form.as_p }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                    <button type="submit" class="btn btn-primary">สร้างวิชา</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

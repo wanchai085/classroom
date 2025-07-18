@@ -1,0 +1,22 @@
+{% extends "base/_base.html" %} <!-- แก้ไข: เพิ่ม extends -->
+
+{% block title %}แก้ไขชิ้นงาน{% endblock %} <!-- แก้ไข: เพิ่ม block title -->
+
+{% block content %} <!-- แก้ไข: เพิ่ม block content -->
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">แก้ไขชิ้นงาน</h3>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary">บันทึกการแก้ไข</button>
+                    <!-- แก้ไข: ใช้ namespace 'academics' -->
+                    <a href="{% url 'academics:assignment_detail' assignment.pk %}" class="btn btn-secondary">ยกเลิก</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

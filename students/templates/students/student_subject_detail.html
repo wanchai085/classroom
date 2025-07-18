@@ -1,0 +1,89 @@
+{% extends "base/_base.html" %} <!-- แก้ไข: เพิ่ม extends -->
+{% load student_extras %}
+{% load tz %}
+
+{% block title %}วิชา: {{ enrollment.classroom.subject.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <!-- แก้ไข: ใช้ namespace 'students' -->
+    <a href="{% url 'students:dashboard' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> กลับไปหน้ารวมวิชา</a>
+</div>
+<h2 class="mb-1">วิชา: {{ enrollment.classroom.subject.name }}</h2>
+<p class="text-muted">ห้องเรียน: {{ enrollment.classroom.class_name }} | ครูผู้สอน: {{ enrollment.classroom.subject.teacher.get_full_name }}</p>
+<hr>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="p-3"><h5 class="mb-0"><i class="bi bi-card-checklist me-2"></i>ชิ้นงานที่ได้รับมอบหมาย</h5></div>
+                {% for assignment in assignments %}
+                <div class="assignment-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <div>
+                            <h6 class="mb-1">{{ assignment.title }}</h6>
+                            <small class="text-muted">กำหนดส่ง: {{ assignment.due_date|localtime|date:"l, j F Y, H:i" }}</small>
+                            <p class="mb-1 mt-2">{{ assignment.description|linebreaksbr }}</p>
+                            {% if assignment.attachment %}
+                                <a href="{{ assignment.attachment.url }}" target="_blank" class="btn btn-sm btn-link ps-0"><i class="bi bi-paperclip"></i> ไฟล์แนบจากครู</a>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% with submission=submission_dict|get_item:assignment.pk %}
+                                <button type="button" class="btn btn-sm {% if submission %}btn-outline-secondary{% else %}btn-primary{% endif %}" data-bs-toggle="collapse" data-bs-target="#submit-form-{{ assignment.pk }}">
+                                    {% if submission %}<i class="bi bi-check-circle-fill"></i> ส่งแล้ว (แก้ไข){% else %}<i class="bi bi-upload"></i> ส่งงาน{% endif %}
+                                </button>
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+                <div class="collapse p-3 bg-light border-top" id="submit-form-{{ assignment.pk }}">
+                    {% with submission=submission_dict|get_item:assignment.pk %}
+                        {% if submission %}
+                            <div class="alert {% if submission.is_late %}alert-danger{% else %}alert-info{% endif %} small">
+                                <p class="mb-1"><strong>ส่งล่าสุด:</strong> {{ submission.submitted_at|localtime|date:"d M Y, H:i" }}{% if submission.is_late %} (ส่งสาย){% endif %}</p>
+                                <a href="{{ submission.attachment.url }}" target="_blank">ดูไฟล์ที่ส่งไปล่าสุด</a>
+                                <p class="mb-1 mt-2"><strong>คะแนนที่ได้:</strong> {{ submission.grade|default_if_none:"รอตรวจ" }} / {{ assignment.max_score|default_if_none:'-' }}</p>
+                            </div>
+                            {% if submission.feedback %}
+                            <div class="feedback-box">
+                                <p class="mb-1 fw-bold"><i class="bi bi-chat-right-text-fill"></i> คอมเมนต์จากครู:</p>
+                                <div style="white-space: pre-wrap;">{{ submission.feedback }}</div>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+
+                        <p class="fw-bold mt-3">{% if submission %}แก้ไขการส่งงาน{% else %}ส่งงาน{% endif %}: {{ assignment.title }}</p>
+                        <!-- แก้ไข: ใช้ namespace 'students' -->
+                        <form action="{% url 'students:subject_detail' enrollment.pk %}" method="post" enctype="multipart/form-data">
+                            {% csrf_token %}<input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                            <div class="mb-2">{{ submission_form.attachment }}</div>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> ยืนยันการส่ง</button>
+                        </form>
+                    {% endwith %}
+                </div>
+                {% empty %}
+                <div class="p-4 text-center text-muted">ยังไม่มีชิ้นงานในวิชานี้</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-clipboard2-data-fill me-2"></i>สรุปผลการเรียน</h5></div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <h6 class="text-muted">คะแนนรวม (จากคะแนนย่อย)</h6>
+                    <p class="score-display {% if enrollment.total_score < 50 %}text-danger{% else %}text-info{% endif %}">{{ enrollment.total_score|floatformat:2 }}</p>
+                </div>
+                <hr>
+                <div>
+                    <h6 class="text-muted">เกรด (คำนวณอัตโนมัติ)</h6>
+                    {% if enrollment.final_grade is not None %}<p class="display-5 {% if enrollment.final_grade < 1.0 %}text-danger{% else %}text-success{% endif %} fw-bold">{{ enrollment.final_grade }}</p>
+                    {% else %}<p class="display-5 text-secondary fw-bold">-</p>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
