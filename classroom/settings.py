@@ -8,31 +8,36 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# โหลดค่าจากไฟล์ .env สำหรับการพัฒนาบนเครื่อง
+# โหลดค่าจากไฟล์ .env สำหรับการพัฒนาบนเครื่อง (ถ้ามี)
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
-# SECURITY WARNING: keep the secret key used in production secret!
-# ดึงค่า SECRET_KEY จาก Environment Variable
-SECRET_KEY = os.environ.get('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-# ค่า DEBUG จะเป็น True ถ้ามีตัวแปร DEBUG=True ใน Environment, ไม่งั้นจะเป็น False
+# === การตั้งค่าสำหรับความปลอดภัยและการใช้งานจริง (Production) ===
+
+# ดึงค่า SECRET_KEY จาก Environment Variable เพื่อความปลอดภัย
+# ถ้าหาไม่เจอตอนพัฒนา ให้ใช้ค่าชั่วคราวไปก่อน (แต่จะแสดงคำเตือน)
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-temporary-key-for-development')
+
+# DEBUG จะเป็น True ก็ต่อเมื่อมี DEBUG=True ใน Environment เท่านั้น
+# บน Render จะไม่มีตัวแปรนี้ ทำให้ค่าเริ่มต้นเป็น False โดยอัตโนมัติ
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-# ตั้งค่า ALLOWED_HOSTS สำหรับ Render
+# ตั้งค่า ALLOWED_HOSTS ให้รองรับ Render และ localhost
 ALLOWED_HOSTS = []
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
-# Application definition
+# === Application definition ===
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',  # เพิ่มสำหรับ Whitenoise
     'django.contrib.staticfiles',
     'rest_framework',
     'accounts.apps.AccountsConfig',
@@ -74,16 +79,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'classroom.wsgi.application'
 
-# Database configuration
+
+# === การตั้งค่าฐานข้อมูล (สำคัญที่สุด) ===
+
 DATABASES = {
     'default': dj_database_url.config(
-        # ใช้ SQLite ถ้ายังพัฒนาบนเครื่องและไม่มี DATABASE_URL
+        # ใช้ DATABASE_URL จาก Environment ของ Render
+        # ถ้าหาไม่เจอ (ตอนพัฒนาบนเครื่อง) ให้กลับไปใช้ sqlite3 แทน
         default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
-        conn_max_age=600,
-        conn_health_checks=True,
+        conn_max_age=600 # ทำให้การเชื่อมต่อเสถียรขึ้น
     )
 }
 
+
+# === Password validation ===
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
@@ -91,21 +100,29 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
 ]
 
+
+# === Internationalization ===
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Bangkok'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage' # <<< เพิ่มการตั้งค่านี้
 
-# Media files (User uploaded files)
+# === Static files (CSS, JavaScript, Images) ===
+STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles' # ที่สำหรับ collectstatic
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage' # ทำให้ Whitenoise ทำงานได้เต็มประสิทธิภาพ
+
+# === Media files (User uploaded files) ===
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+
+# === Default primary key field type ===
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# === Login/Logout Redirects ===
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = 'accounts:login'
 LOGOUT_REDIRECT_URL = 'accounts:login'
